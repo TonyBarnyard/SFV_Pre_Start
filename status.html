@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Health Check</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .container { max-width: 600px; margin-top: 40px; }
+        .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px; }
+        .status-row { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; }
+        .icon { font-size: 1.5rem; margin-right: 15px; width: 30px; text-align: center; }
+        .pass { color: #28a745; }
+        .fail { color: #dc3545; }
+        .wait { color: #ffc107; }
+        .details { font-size: 0.85rem; color: #6c757d; display: block; margin-top: 2px; }
+    </style>
+</head>
+<body class="p-3">
+
+<div class="container">
+    <h3 class="mb-4 text-center text-dark">System Health Monitor</h3>
+    
+    <div class="card p-4 mb-4">
+        <label class="fw-bold mb-2">Google Script URL</label>
+        <div class="input-group">
+            <input type="text" id="api-url" class="form-control" placeholder="Paste your Web App URL here...">
+            <button onclick="runTests()" class="btn btn-primary">Run Test</button>
+        </div>
+        <small class="text-muted mt-2">Paste the URL ending in <code>/exec</code> here.</small>
+    </div>
+
+    <div class="card bg-white" id="results">
+        <div class="status-row" id="test-net">
+            <span class="icon">⚪</span> 
+            <div>
+                <strong>1. Internet Connection</strong>
+                <span class="details">Checking device connectivity...</span>
+            </div>
+        </div>
+        <div class="status-row" id="test-url">
+            <span class="icon">⚪</span> 
+            <div>
+                <strong>2. URL Format</strong>
+                <span class="details">Verifying link syntax...</span>
+            </div>
+        </div>
+        <div class="status-row" id="test-server">
+            <span class="icon">⚪</span> 
+            <div>
+                <strong>3. Cloud Server (Google)</strong>
+                <span class="details">Pinging the script...</span>
+            </div>
+        </div>
+        <div class="status-row" id="test-db">
+            <span class="icon">⚪</span> 
+            <div>
+                <strong>4. Database Integrity</strong>
+                <span class="details">Reading Sheet Data...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Load previously saved URL for convenience
+    const savedUrl = localStorage.getItem('prestart_api_url');
+    if(savedUrl) document.getElementById('api-url').value = savedUrl;
+
+    async function runTests() {
+        const url = document.getElementById('api-url').value.trim();
+        localStorage.setItem('prestart_api_url', url); // Save for next time
+
+        // RESET UI
+        updateStatus('test-net', 'wait', 'Checking...');
+        updateStatus('test-url', 'wait', 'Waiting...');
+        updateStatus('test-server', 'wait', 'Waiting...');
+        updateStatus('test-db', 'wait', 'Waiting...');
+
+        // TEST 1: INTERNET
+        if(navigator.onLine) {
+            updateStatus('test-net', 'pass', 'Online');
+        } else {
+            updateStatus('test-net', 'fail', 'Device is Offline. Check Wi-Fi/4G.');
+            return;
+        }
+
+        // TEST 2: URL FORMAT
+        if(url.includes('script.google.com') && url.endsWith('/exec')) {
+            updateStatus('test-url', 'pass', 'Format looks correct.');
+        } else {
+            updateStatus('test-url', 'fail', 'Invalid URL. It must end in "/exec". Did you copy the Editor link?');
+            return;
+        }
+
+        // TEST 3: SERVER CONNECTIVITY
+        try {
+            updateStatus('test-server', 'wait', 'Contacting Google...');
+            
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`Server returned Error ${response.status}`);
+            }
+            
+            const data = await response.json();
+            updateStatus('test-server', 'pass', 'Connection Established.');
+
+            // TEST 4: DATA INTEGRITY
+            if(data.vehicles && data.operators) {
+                updateStatus('test-db', 'pass', `Found ${data.vehicles.length} Vehicles, ${data.operators.length} Operators.`);
+            } else {
+                updateStatus('test-db', 'fail', 'Connected, but data is missing. Check Sheet Tab names.');
+            }
+
+        } catch (error) {
+            console.error(error);
+            updateStatus('test-server', 'fail', 'Connection Failed.');
+            
+            let advice = "Unknown Error.";
+            if(error.message.includes("Failed to fetch")) {
+                advice = "<strong>PERMISSION ERROR:</strong> The script is likely set to 'Only Me'. Change deployment to 'Anyone'.";
+            }
+            document.querySelector('#test-server .details').innerHTML = `<span class="text-danger">${advice}</span>`;
+        }
+    }
+
+    function updateStatus(id, type, msg) {
+        const icons = { wait: '⏳', pass: '✅', fail: '❌' };
+        const el = document.getElementById(id);
+        el.querySelector('.icon').innerText = icons[type];
+        el.querySelector('.details').innerHTML = msg;
+        el.querySelector('strong').style.color = (type === 'pass' ? 'green' : (type === 'fail' ? 'red' : 'black'));
+    }
+</script>
+</body>
+</html>
