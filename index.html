@@ -8,9 +8,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         .hidden { display: none; }
-        /* Red border for Service Mode to alert user */
         .service-mode { border: 2px solid #dc3545; background-color: #fff8f8; }
-        /* Full screen loader */
         .loader { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.98); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; }
         .btn-xl { padding: 15px; font-size: 1.2rem; font-weight: bold; }
     </style>
@@ -18,7 +16,7 @@
 <body class="bg-light">
 
 <script>
-    // --- YOUR SPECIFIC GOOGLE SCRIPT URL ---
+    // --- YOUR VERIFIED WORKING LINK ---
     const API_URL = "https://script.google.com/macros/s/AKfycbw6xtbL7QPCvM-D4fjw6HHBo1UgEnPq4b1UEe3m9agZKwT7iTCtoxO0rU1LZdhd5QHqCw/exec"; 
 </script>
 
@@ -138,9 +136,7 @@
     const loader = document.getElementById('loader');
     const loaderText = document.getElementById('loader-text');
 
-    // 1. INITIALIZE SYSTEM
     window.onload = function() {
-        // Attempt GPS
         if(navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 pos => { document.getElementById('gps').value = pos.coords.latitude + "," + pos.coords.longitude; },
@@ -148,28 +144,22 @@
             );
         }
 
-        // Fetch Data from Google
         fetch(API_URL)
         .then(res => res.json())
         .then(data => {
-            // Logo
             if(data.logo) { 
                 document.getElementById('logo-img').src = data.logo; 
                 document.getElementById('logo-img').style.display = 'inline'; 
             }
-            
-            // Vehicles
             vehiclesDB = data.vehicles;
             let vSel = document.getElementById('vehicle');
             vSel.innerHTML = '<option value="" disabled selected>Select Vehicle...</option>';
             data.vehicles.forEach(v => {
                 let opt = document.createElement('option');
-                opt.value = v[0]; // ID
-                opt.text = v[0] + " (" + v[1] + ")";
+                opt.value = v[0]; opt.text = v[0] + " (" + v[1] + ")";
                 vSel.add(opt);
             });
 
-            // Operators
             let dSel = document.getElementById('driver');
             dSel.innerHTML = '<option value="" disabled selected>Select Name...</option>';
             data.operators.forEach(op => {
@@ -177,66 +167,41 @@
                 opt.value = op; opt.text = op; dSel.add(opt);
             });
 
-            // Check for QR Code Link
             const urlParams = new URLSearchParams(window.location.search);
-            const vid = urlParams.get('vid');
-            if(vid) { 
-                vSel.value = vid; 
-                updateUI(); 
-            }
-
+            if(urlParams.get('vid')) { vSel.value = urlParams.get('vid'); updateUI(); }
             loader.classList.add('hidden');
         })
         .catch(err => {
-            loaderText.innerText = "Error Connecting to System.";
-            alert("Connection Failed. Please reload.");
+            loaderText.innerText = "Error Connecting.";
+            alert("Network Error. Please Reload.");
         });
     };
 
-    // 2. UI UPDATES
     function updateUI() {
         const vid = document.getElementById('vehicle').value;
         const veh = vehiclesDB.find(v => v[0] === vid);
-        
         document.getElementById('veh-title').innerText = vid ? vid + " Pre-Start" : "Vehicle Pre-Start";
-        
         const imgDiv = document.getElementById('asset-photo');
-        if(veh && veh[2]) { 
-            imgDiv.querySelector('img').src = veh[2]; 
-            imgDiv.classList.remove('hidden'); 
-        } else { 
-            imgDiv.classList.add('hidden'); 
-        }
+        if(veh && veh[2]) { imgDiv.querySelector('img').src = veh[2]; imgDiv.classList.remove('hidden'); } 
+        else { imgDiv.classList.add('hidden'); }
     }
 
     function toggleMode() {
         const isSvc = document.getElementById('mode').value === 'SERVICE';
-        
         document.getElementById('daily-checks').classList.toggle('hidden', isSvc);
         document.getElementById('service-checks').classList.toggle('hidden', !isSvc);
-        
-        // Toggle Required Fields
         const dailyInp = document.getElementById('daily-checks').querySelectorAll('input');
         const svcInp = document.getElementById('service-checks').querySelectorAll('input');
         dailyInp.forEach(i => i.required = !isSvc);
         svcInp.forEach(i => i.required = isSvc);
-        
-        // Update Button
         const btn = document.getElementById('btn-submit');
-        if(isSvc) {
-            btn.className = "btn btn-danger w-100 btn-xl shadow";
-            btn.innerText = "SIGN OVER FOR SERVICE";
-        } else {
-            btn.className = "btn btn-primary w-100 btn-xl shadow";
-            btn.innerText = "SUBMIT CHECK";
-        }
+        if(isSvc) { btn.className = "btn btn-danger w-100 btn-xl shadow"; btn.innerText = "SIGN OVER FOR SERVICE"; } 
+        else { btn.className = "btn btn-primary w-100 btn-xl shadow"; btn.innerText = "SUBMIT CHECK"; }
     }
 
-    // 3. SUBMIT FORM
     async function submitForm(e) {
         e.preventDefault();
         const btn = document.getElementById('btn-submit');
-        
         btn.disabled = true;
         loader.classList.remove('hidden');
         loaderText.innerText = "Verifying PIN...";
@@ -244,14 +209,10 @@
         const driver = document.getElementById('driver').value;
         const pin = document.getElementById('pin').value;
 
-        // VERIFY PIN
         try {
             const req = await fetch(API_URL + "?action=verify&name=" + encodeURIComponent(driver) + "&pin=" + pin);
             const res = await req.json();
-            
-            if(!res.valid) {
-                throw new Error("Invalid PIN Number");
-            }
+            if(!res.valid) throw new Error("Invalid PIN Number");
         } catch(err) {
             loader.classList.add('hidden');
             alert("❌ Access Denied: " + err.message);
@@ -259,9 +220,7 @@
             return;
         }
 
-        // PREPARE DATA
-        loaderText.innerText = "Generating PDF & Emailing...";
-        
+        loaderText.innerText = "Generating PDF...";
         let photoData = "";
         const fileInput = document.getElementById('photo');
         if(fileInput.files.length > 0) photoData = await toBase64(fileInput.files[0]);
@@ -270,56 +229,36 @@
         const divId = document.getElementById('mode').value === 'SERVICE' ? 'service-checks' : 'daily-checks';
         document.getElementById(divId).querySelectorAll('.form-check').forEach(div => {
             const cb = div.querySelector('input');
-            const lbl = div.querySelector('label').innerText;
-            if(cb.checked) checks += `☑ ${lbl}<br>`;
+            if(cb.checked) checks += `☑ ${div.querySelector('label').innerText}<br>`;
         });
 
         const vid = document.getElementById('vehicle').value;
         const veh = vehiclesDB.find(v => v[0] === vid);
 
         const payload = {
-            vehicle: vid,
-            rego: veh ? veh[1] : "",
-            driver: driver,
+            vehicle: vid, rego: veh ? veh[1] : "", driver: driver,
             mode: document.getElementById('mode').value,
             load_type: document.getElementById('load_type').value,
             gps: document.getElementById('gps').value,
             notes: document.getElementById('notes').value,
-            checks: checks,
-            photo: photoData
+            checks: checks, photo: photoData
         };
 
-        // SEND (No-Cors Mode)
-        fetch(API_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify(payload)
-        }).then(() => {
+        fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+        .then(() => {
             loader.classList.add('hidden');
-            document.body.innerHTML = `
-                <div class="d-flex flex-column justify-content-center align-items-center vh-100 text-center bg-success text-white">
-                    <h1 class="display-1">✔</h1>
-                    <h2>Success</h2>
-                    <p class="lead">Document emailed to supervisor.</p>
-                    <button onclick="window.location.reload()" class="btn btn-light btn-lg mt-4">New Entry</button>
-                </div>
-            `;
+            document.body.innerHTML = `<div class="d-flex flex-column justify-content-center align-items-center vh-100 text-center bg-success text-white"><h1 class="display-1">✔</h1><h2>Success</h2><p>Document emailed.</p><button onclick="window.location.reload()" class="btn btn-light mt-4">New Entry</button></div>`;
         }).catch(err => {
             loader.classList.add('hidden');
-            alert("Network Error. Please try again.");
-            btn.disabled = false;
+            alert("Network Error."); btn.disabled = false;
         });
     }
 
-    // 4. ADMIN QR GENERATOR
     function showQR() {
         const vid = document.getElementById('vehicle').value;
         if(!vid) return alert("Select vehicle first.");
-        
         document.getElementById('qrcode').innerHTML = "";
-        const url = window.location.href.split('?')[0] + "?vid=" + vid;
-        new QRCode(document.getElementById("qrcode"), { text: url, width: 150, height: 150 });
-        
+        new QRCode(document.getElementById("qrcode"), { text: window.location.href.split('?')[0] + "?vid=" + vid, width: 150, height: 150 });
         document.getElementById('qr-panel').classList.remove('hidden');
         document.getElementById('app-form').classList.add('hidden');
     }
