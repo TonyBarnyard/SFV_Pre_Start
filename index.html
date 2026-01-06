@@ -2,83 +2,63 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Shotfirer Pre-Start</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         .hidden { display: none; }
-        /* Section Header Colors */
-        .section-header { font-weight: bold; color: white; padding: 10px 15px; margin-top: 20px; border-radius: 5px 5px 0 0; }
-        .cat-a { background-color: #dc3545; } /* Red */
-        .cat-b { background-color: #fd7e14; } /* Orange */
-        .cat-c { background-color: #ffc107; color: black !important; } /* Yellow */
-        .explo { background-color: #6f42c1; } /* Purple */
-        
-        /* Checklist Item Styling */
-        .check-row { border-bottom: 1px solid #eee; padding: 10px 5px; display: flex; align-items: center; justify-content: space-between; background: white; }
-        .check-label { flex-grow: 1; margin-left: 10px; font-size: 14px; }
-        
-        /* Loading Screen */
+        /* Red border for Service Mode to alert user */
+        .service-mode { border: 2px solid #dc3545; background-color: #fff8f8; }
+        /* Full screen loader */
         .loader { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.98); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+        .btn-xl { padding: 15px; font-size: 1.2rem; font-weight: bold; }
     </style>
 </head>
-<body class="bg-light pb-5">
+<body class="bg-light">
 
 <script>
-    // =========================================================
-    https://script.google.com/macros/s/AKfycbw6xtbL7QPCvM-D4fjw6HHBo1UgEnPq4b1UEe3m9agZKwT7iTCtoxO0rU1LZdhd5QHqCw/exec
-    // =========================================================
-    const API_URL = "PASTE_YOUR_GOOGLE_SCRIPT_URL_HERE"; 
+    // --- YOUR SPECIFIC GOOGLE SCRIPT URL ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbw6xtbL7QPCvM-D4fjw6HHBo1UgEnPq4b1UEe3m9agZKwT7iTCtoxO0rU1LZdhd5QHqCw/exec"; 
 </script>
 
 <div id="loader" class="loader">
-    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-    <p class="mt-3 fw-bold text-muted" id="loader-text">Connecting to HQ...</p>
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+    <p class="mt-3 fw-bold text-secondary" id="loader-text">Connecting to HQ...</p>
 </div>
 
 <div class="container py-3" style="max-width: 600px;">
     
-    <div class="text-center mb-3">
-        <img id="logo-img" src="" style="max-height: 70px; display:none;" class="mb-2">
-        <h5 id="veh-title" class="fw-bold text-secondary">Loading...</h5>
-        <button class="btn btn-sm btn-link text-decoration-none" onclick="toggleQR()">🖨️ Admin: Show QR Code</button>
+    <div class="text-center mb-4">
+        <img id="logo-img" src="" style="max-height: 80px; display:none;" class="mb-2">
+        <h4 id="veh-title" class="fw-bold">Vehicle Pre-Start</h4>
+        <button class="btn btn-sm btn-link text-decoration-none" onclick="showQR()">Admin: Show QR Code</button>
     </div>
 
     <form id="app-form" onsubmit="submitForm(event)">
         
-        <div class="card shadow-sm mb-3 border-0">
-            <div class="card-body p-3 bg-white rounded">
-                
+        <div class="card shadow-sm mb-3 border-primary">
+            <div class="card-body">
                 <div class="mb-3">
-                    <label class="small text-muted fw-bold">VEHICLE</label>
-                    <select id="vehicle" class="form-select" onchange="updateUI()" required>
-                        <option value="">Loading List...</option>
-
+                    <label class="form-label fw-bold text-muted small">VEHICLE</label>
+                    <select id="vehicle" class="form-select form-select-lg" onchange="updateUI()" required>
+                        <option value="" disabled selected>Loading...</option>
                     </select>
                 </div>
                 
                 <div id="asset-photo" class="text-center mb-3 hidden">
-                    <img src="" style="max-height: 120px; border-radius: 4px; border: 1px solid #ddd;">
-                </div>
-
-                <div class="mb-3">
-                    <label class="small text-muted fw-bold">SHIFT SUPERVISOR</label>
-                    <select id="supervisor" class="form-select" required>
-                        <option value="">-- Select Supervisor --</option>
-                    </select>
-                    <div class="form-text small">Alerts will be routed to this person.</div>
+                    <img src="" style="max-height: 140px; border-radius: 5px; border: 1px solid #ccc;">
                 </div>
 
                 <div class="row g-2">
-                    <div class="col-8">
-                        <label class="small text-muted fw-bold">OPERATOR</label>
+                    <div class="col-7">
+                        <label class="form-label fw-bold text-muted small">OPERATOR</label>
                         <select id="driver" class="form-select" required>
                             <option value="">Loading...</option>
                         </select>
                     </div>
-                    <div class="col-4">
-                        <label class="small text-muted fw-bold">PIN</label>
+                    <div class="col-5">
+                        <label class="form-label fw-bold text-muted small">PIN</label>
                         <input type="password" id="pin" class="form-control" placeholder="****" inputmode="numeric" required>
                     </div>
                 </div>
@@ -86,180 +66,140 @@
         </div>
 
         <div class="mb-3">
-            <select id="mode" class="form-select form-select-lg fw-bold text-
-
-primary border-primary" onchange="toggleMode()">
-                <option value="DAILY">📋 Daily Pre-Start (Explosives)</option>
-                <option value="SERVICE">🔧 Service Handover (Workshop)</option>
+            <label class="fw-bold">Mode</label>
+            <select id="mode" class="form-select" onchange="toggleMode()">
+                <option value="DAILY">Daily Pre-Start (Explosives)</option>
+                <option value="SERVICE">Service Handover (Workshop)</option>
             </select>
         </div>
 
         <div id="daily-checks">
-            <div class="card mb-3 border-0 shadow-sm">
-                <div class="card-body p-2">
-                    <label class="fw-bold text-purple small">CURRENT LOAD TYPE</label>
-                    <select id="load_type" class="form-select mt-1">
-                        <option>Mixed (>250kg HE + Dets)</option>
-                        <option>HE Only</option>
-                        <option>Dets Only</option>
-                        <option>Empty</option>
-                    </select>
-                </div>
+            <div class="mb-3">
+                <label>Current Load Type</label>
+                <select id="load_type" class="form-select">
+                    <option>Mixed (>250kg HE + Dets)</option>
+                    <option>HE Only</option>
+                    <option>Dets Only</option>
+                    <option>Empty (Returning)</option>
+                </select>
             </div>
-
-            <div class="section-header explo">Explosives Compliance (AEC)</div>
-            <div class="rounded-bottom shadow-sm" id="list-explo"></div>
-
-            <div class="section-header cat-a">Category A (DO NOT OPERATE)</div>
-            <div class="rounded-bottom shadow-sm" id="list-cata"></div>
-
-            <div class="section-header cat-b">Category B (Auth Required)</div>
-            <div class="rounded-bottom shadow-sm" id="list-catb"></div>
-
-            <div class="section-header cat-c">Category C (Report Fault)</div>
-            <div class="rounded-bottom shadow-sm" id="list-catc"></div>
+            
+            <h6 class="border-bottom pb-2 mt-4 text-primary">AEC Compliance</h6>
+            <div class="form-check py-2 border-bottom"><input type="checkbox" class="form-check-input" required><label class="form-check-label">Manifest & EPG Current/Dated</label></div>
+            <div class="form-check py-2 border-bottom"><input type="checkbox" class="form-check-input" required><label class="form-check-label">Placards Visible (Front & Rear)</label></div>
+            <div class="form-check py-2 border-bottom"><input type="checkbox" class="form-check-input" required><label class="form-check-label">Segregation: Detonators Locked</label></div>
+            <div class="form-check py-2 border-bottom"><input type="checkbox" class="form-check-input" required><label class="form-check-label">2x Fire Extinguishers Charged</label></div>
+            <div class="form-check py-2 border-bottom"><input type="checkbox" class="form-check-input" required><label class="form-check-label">Boxes Clean (No Residue)</label></div>
+            
+            <h6 class="border-bottom pb-2 mt-4 text-primary">Vehicle Condition</h6>
+            <div class="form-check py-2 border-bottom"><input type="checkbox" class="form-check-input" required><label class="form-check-label">Tyres / Lights / Brakes</label></div>
+            <div class="form-check py-2 border-bottom"><input type="checkbox" class="form-check-input" required><label class="form-check-label">Two-Way Radio Functional</label></div>
         </div>
 
-
-        <div id="service-checks" class="hidden">
-            <div class="alert alert-danger shadow-sm">
-                <strong>Explosives Clearance:</strong><br>
-                You must verify all boxes are 100% EMPTY before handing over to workshop.
+        <div id="service-checks" class="hidden p-3 mb-3 bg-white border border-danger rounded shadow-sm">
+            <h5 class="text-danger fw-bold text-center">Explosives Clearance</h5>
+            <p class="small text-center text-muted mb-3">Check required before workshop entry.</p>
+            
+            <div class="form-check py-2 border-bottom">
+                <input type="checkbox" class="form-check-input" id="s1">
+                <label class="form-check-label fw-bold">HE Box (Boosters) EMPTY</label>
             </div>
-            <div class="rounded shadow-sm" id="list-svc"></div>
+            <div class="form-check py-2 border-bottom">
+                <input type="checkbox" class="form-check-input" id="s2">
+                <label class="form-check-label fw-bold">Detonator Box EMPTY</label>
+            </div>
+            <div class="form-check py-2">
+                <input type="checkbox" class="form-check-input" id="s3">
+                <label class="form-check-label">Compartments Swept Clean</label>
+            </div>
         </div>
 
-        <div class="mt-4 mb-3">
-            <label class="fw-bold small text-muted">PHOTO EVIDENCE / FAULT PHOTO</label>
+        <div class="mb-3 mt-4">
+            <label class="form-label fw-bold">Photo Evidence / Faults</label>
             <input type="file" id="photo" class="form-control" accept="image/*" capture="environment">
         </div>
-        <div class="mb-4">
-            <label class="fw-bold small text-muted">NOTES</label>
-            <textarea id="notes" class="form-control" rows="3" placeholder="Enter specific details here..."></textarea>
+        <div class="mb-3">
+            <textarea id="notes" class="form-control" rows="3" placeholder="Enter fault notes here..."></textarea>
         </div>
         
         <input type="hidden" id="gps">
-        <button type="submit" id="btn-submit" class="btn btn-primary w-100 btn-lg py-3 shadow fw-bold">SUBMIT CHECKLIST</button>
+        <button type="submit" id="btn-submit" class="btn btn-primary w-100 btn-xl shadow">SUBMIT CHECK</button>
     </form>
 
-    <div id="qr-panel" class="hidden text-center bg-white" style="position:fixed; top:0; left:0; width:100%; height:100%; padding-top: 100px; z-index: 2000;">
-        <h3>Vehicle QR Code</h3>
-        <p class="text-muted">Print and stick to dashboard.</p>
-        <div id="qrcode" class="d-flex justify-content-center my-4"></div>
-        <button onclick="window.location.reload()" class="btn btn-secondary btn-lg">Close</button>
+    <div id="qr-panel" class="hidden text-center mt-5 pt-4 border-top">
+        <h5>Vehicle QR Code</h5>
+        <div id="qrcode" class="d-flex justify-content-center my-3"></div>
+        <button onclick="window.location.reload()" class="btn btn-secondary w-100">Close</button>
     </div>
-
-
 </div>
 
 <script>
-    // --- CHECKLIST DATA DEFINITIONS ---
-    const lists = {
-        explo: ["Manifest & EPG Current/Dated", "Placards Visible (Front & Rear)", "Segregation: Dets Locked", "Boxes Clean (No Residue)"],
-        catA: ["Coolant level", "Engine oil level", "Steering fluid level", "Transmission & hydraulic fluid oil level", "Tyres, rims & nuts", "Head, hazard & indicator lights", "Brake, work & reverse lights", "Seats & seat belts", "Brakes & steering", "Two-way radio(s)", "Horn & warning systems", "Safety devices / E-stop", "Beacon"],
-        catB: ["Windows, washers & mirrors", "Fire Extinguisher", "Fluid leaks", "Battery", "Flag pole & light", "Air conditioner", "First aid kit present & stocked"],
-        catC: ["Vehicle panels", "Fuel level", "Jack, wheel brace", "Tyre changing tools", "Spare Tyre(s)", "Asset number ID present & legible", "Dirt / Vegetation build up", "Cargo barrier", "Housekeeping", "Registration plates", "Dash Camera"],
-        svc:  ["HE Box (Boosters) 100% EMPTY", "Detonator Box 100% EMPTY", "Compartments Swept Clean"]
-    };
-
-    // --- GLOBAL STORAGE ---
-    let settings = {};
     let vehiclesDB = [];
-    let supervisorsDB = []; 
+    const loader = document.getElementById('loader');
+    const loaderText = document.getElementById('loader-text');
 
-    // --- INITIALIZATION ---
+    // 1. INITIALIZE SYSTEM
     window.onload = function() {
-        // 1. Get GPS
+        // Attempt GPS
         if(navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(pos => {
-                 document.getElementById('gps').value = pos.coords.latitude + "," + pos.coords.longitude;
-
-            }, err => { console.log("GPS Error: " + err); });
+            navigator.geolocation.getCurrentPosition(
+                pos => { document.getElementById('gps').value = pos.coords.latitude + "," + pos.coords.longitude; },
+                err => { console.log("GPS Denied"); }
+            );
         }
 
-        // 2. Build UI Checklists
-        renderList('list-explo', lists.explo, 'explo');
-        renderList('list-cata', lists.catA, 'cata');
-        renderList('list-catb', lists.catB, 'catb');
-        renderList('list-catc', lists.catC, 'catc');
-        renderList('list-svc', lists.svc, 'svc');
-
-        // 3. Fetch Data from Google Sheet
+        // Fetch Data from Google
         fetch(API_URL)
         .then(res => res.json())
         .then(data => {
-            // A. Settings & Logo
-            settings = data.settings;
-            if(settings.logo) { 
-                document.getElementById('logo-img').src = settings.logo; 
+            // Logo
+            if(data.logo) { 
+                document.getElementById('logo-img').src = data.logo; 
                 document.getElementById('logo-img').style.display = 'inline'; 
             }
             
-            // B. Vehicles Dropdown
+            // Vehicles
             vehiclesDB = data.vehicles;
             let vSel = document.getElementById('vehicle');
-            vSel.innerHTML = '<option value="">-- Select Vehicle --</option>';
-            data.vehicles.forEach(v => { 
-                let opt = new Option(v[0] + " (" + v[1] + ")", v[0]); 
-                vSel.add(opt); 
+            vSel.innerHTML = '<option value="" disabled selected>Select Vehicle...</option>';
+            data.vehicles.forEach(v => {
+                let opt = document.createElement('option');
+                opt.value = v[0]; // ID
+                opt.text = v[0] + " (" + v[1] + ")";
+                vSel.add(opt);
             });
-            
-            // C. Operators Dropdown
+
+            // Operators
             let dSel = document.getElementById('driver');
-            dSel.innerHTML = '<option value="">-- Select Your Name --</option>';
-            data.operators.forEach(op => dSel.add(new Option(op, op)));
-
-            // D. Supervisors Dropdown
-            supervisorsDB = data.supervisors;
-            let sSel = document.getElementById('supervisor');
-            sSel.innerHTML = '<option value="">-- Select Shift Supervisor --</option>';
-            data.supervisors.forEach((sup, index) => {
-                let opt = new Option(sup.name, index); 
-                sSel.add(opt);
+            dSel.innerHTML = '<option value="" disabled selected>Select Name...</option>';
+            data.operators.forEach(op => {
+                let opt = document.createElement('option');
+                opt.value = op; opt.text = op; dSel.add(opt);
             });
 
-            // E. Handle URL Parameters (Auto-select Vehicle from QR)
+            // Check for QR Code Link
             const urlParams = new URLSearchParams(window.location.search);
-            if(urlParams.get('vid')) { 
-                vSel.value = urlParams.get('vid'); 
+            const vid = urlParams.get('vid');
+            if(vid) { 
+                vSel.value = vid; 
                 updateUI(); 
-            } else {
-                document.getElementById('veh-title').innerText = "Select Vehicle";
             }
 
-            // Hide Loader
-            document.getElementById('loader').classList.add('hidden');
+            loader.classList.add('hidden');
         })
         .catch(err => {
-            alert("Error connecting to system. Please check internet connection.");
-            document.getElementById('loader-text').innerText = "Connection Failed.";
+            loaderText.innerText = "Error Connecting to System.";
+            alert("Connection Failed. Please reload.");
         });
     };
 
-    // --- RENDER HTML LISTS ---
-    function renderList(divId, items, prefix) {
-        const container = document.getElementById(divId);
-        items.forEach((item, idx) => {
-            const id = prefix + idx;
-
-            container.innerHTML += `
-            <div class="check-row">
-                <label class="check-label" for="${id}">${item}</label>
-                <input type="checkbox" class="form-check-input" id="${id}" style="width:28px; height:28px; border:2px solid #ccc;" checked>
-            </div>`;
-        });
-    }
-
-    // --- UI UPDATES ---
+    // 2. UI UPDATES
     function updateUI() {
         const vid = document.getElementById('vehicle').value;
         const veh = vehiclesDB.find(v => v[0] === vid);
         
-        if(vid) {
-            document.getElementById('veh-title').innerText = vid + " Pre-Start";
-        }
+        document.getElementById('veh-title').innerText = vid ? vid + " Pre-Start" : "Vehicle Pre-Start";
         
-        // Show Asset Photo if available
         const imgDiv = document.getElementById('asset-photo');
         if(veh && veh[2]) { 
             imgDiv.querySelector('img').src = veh[2]; 
@@ -269,202 +209,125 @@ primary border-primary" onchange="toggleMode()">
         }
     }
 
-    // --- SWITCH MODES (DAILY vs SERVICE) ---
     function toggleMode() {
         const isSvc = document.getElementById('mode').value === 'SERVICE';
+        
         document.getElementById('daily-checks').classList.toggle('hidden', isSvc);
         document.getElementById('service-checks').classList.toggle('hidden', !isSvc);
         
-
+        // Toggle Required Fields
+        const dailyInp = document.getElementById('daily-checks').querySelectorAll('input');
+        const svcInp = document.getElementById('service-checks').querySelectorAll('input');
+        dailyInp.forEach(i => i.required = !isSvc);
+        svcInp.forEach(i => i.required = isSvc);
+        
+        // Update Button
         const btn = document.getElementById('btn-submit');
         if(isSvc) {
-            btn.className = "btn btn-danger w-100 btn-lg py-3 shadow";
-            btn.innerText = "🚨 SIGN OVER FOR SERVICE";
+            btn.className = "btn btn-danger w-100 btn-xl shadow";
+            btn.innerText = "SIGN OVER FOR SERVICE";
         } else {
-            btn.className = "btn btn-primary w-100 btn-lg py-3 shadow";
-            btn.innerText = "SUBMIT CHECKLIST";
+            btn.className = "btn btn-primary w-100 btn-xl shadow";
+            btn.innerText = "SUBMIT CHECK";
         }
     }
 
-    // --- FORM SUBMISSION HANDLER ---
+    // 3. SUBMIT FORM
     async function submitForm(e) {
         e.preventDefault();
         const btn = document.getElementById('btn-submit');
-        const loader = document.getElementById('loader');
         
-        // 1. Get Selected Supervisor Data
-        const supIndex = document.getElementById('supervisor').value;
-        if(supIndex === "") { alert("Please select a Supervisor"); return; }
-        const currentSup = supervisorsDB[supIndex]; 
-
-        // 2. Count Faults (Unchecked items)
-        let faultsA = countUnchecked('list-explo') + countUnchecked('list-cata');
-        let faultsB = countUnchecked('list-catb');
-        let faultsC = countUnchecked('list-catc');
-        let status = "OK";
-        
-        if (faultsA > 0) status = "CRITICAL";
-        else if (faultsB > 0) status = "WARNING";
-        else if (faultsC > 0) status = "MINOR";
-
-        // 3. Cat A Stop Logic
-        if (status === "CRITICAL" && document.getElementById('mode').value !== 'SERVICE') {
-            if(!confirm("⛔ STOP! CRITICAL FAULT DETECTED.\n\nYou have 
-
-marked a Category A or Compliance item as Failed.\n\nDo not operate this vehicle.\n\nClick OK to report and alert " + currentSup.name + ".")) return;
-        }
-
-        // 4. Verify PIN
         btn.disabled = true;
         loader.classList.remove('hidden');
-        document.getElementById('loader-text').innerText = "Verifying PIN...";
-        
+        loaderText.innerText = "Verifying PIN...";
+
         const driver = document.getElementById('driver').value;
         const pin = document.getElementById('pin').value;
-        
+
+        // VERIFY PIN
         try {
             const req = await fetch(API_URL + "?action=verify&name=" + encodeURIComponent(driver) + "&pin=" + pin);
             const res = await req.json();
-            if(!res.valid) throw new Error("Invalid Employee PIN");
+            
+            if(!res.valid) {
+                throw new Error("Invalid PIN Number");
+            }
         } catch(err) {
-            loader.classList.add('hidden'); 
-            alert("❌ " + err.message); 
-            btn.disabled = false; 
+            loader.classList.add('hidden');
+            alert("❌ Access Denied: " + err.message);
+            btn.disabled = false;
             return;
         }
 
-        // 5. Prepare Data Payload
-        document.getElementById('loader-text').innerText = "Generating Report...";
+        // PREPARE DATA
+        loaderText.innerText = "Generating PDF & Emailing...";
         
-        let checkHTML = generateChecklistHTML();
         let photoData = "";
         const fileInput = document.getElementById('photo');
         if(fileInput.files.length > 0) photoData = await toBase64(fileInput.files[0]);
 
-        const payload = {
+        let checks = "";
+        const divId = document.getElementById('mode').value === 'SERVICE' ? 'service-checks' : 'daily-checks';
+        document.getElementById(divId).querySelectorAll('.form-check').forEach(div => {
+            const cb = div.querySelector('input');
+            const lbl = div.querySelector('label').innerText;
+            if(cb.checked) checks += `☑ ${lbl}<br>`;
+        });
 
-            vehicle: document.getElementById('vehicle').value,
-            rego: "", // Rego is looked up in backend based on ID if needed, or visual ref only
+        const vid = document.getElementById('vehicle').value;
+        const veh = vehiclesDB.find(v => v[0] === vid);
+
+        const payload = {
+            vehicle: vid,
+            rego: veh ? veh[1] : "",
             driver: driver,
             mode: document.getElementById('mode').value,
             load_type: document.getElementById('load_type').value,
             gps: document.getElementById('gps').value,
             notes: document.getElementById('notes').value,
-            checks: checkHTML,
-            status: status,
-            photo: photoData,
-            supName: currentSup.name,
-            supEmail: currentSup.email
+            checks: checks,
+            photo: photoData
         };
 
-        // 6. Send to Google Script
-        fetch(API_URL, { 
-            method: 'POST', 
-            mode: 'no-cors', 
-            body: JSON.stringify(payload) 
-        })
-        .then(() => {
+        // SEND (No-Cors Mode)
+        fetch(API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify(payload)
+        }).then(() => {
             loader.classList.add('hidden');
-            
-            // --- DYNAMIC SUCCESS SCREENS ---
-            
-            // Scenario A: Critical Fault (Cat A)
-            if(status === "CRITICAL") {
-                document.body.innerHTML = `
-                <div class="container text-center pt-5">
-                    <h1 class="text-danger" style="font-size:80px;">⛔</h1>
-                    <h2 class="text-danger fw-bold">DO NOT OPERATE</h2>
-                    <div class="card p-3 my-4 shadow border-danger">
-                        <p class="lead mb-0">Category A / Explosives Fault detected.</p>
-                        <p class="text-muted small">Supervisor ($
-
-{currentSup.name}) has been emailed.</p>
-                    </div>
-                    
-                    <a href="sms:${currentSup.mobile}?body=URGENT: Cat A Fault on ${payload.vehicle} (${driver}). Do not operate." 
-                       class="btn btn-warning btn-lg w-100 py-3 fw-bold shadow">
-                       📲 Text ${currentSup.name} Now
-                    </a>
-                    
-                    <button onclick="window.location.reload()" class="btn btn-secondary mt-4">Close App</button>
-                </div>`;
-            } 
-            // Scenario B: Warning (Cat B)
-            else if (status === "WARNING") {
-                alert("⚠️ CAUTION: Cat B Faults Recorded.\n\nSupervisor & Maintenance have been notified.\n\nDrive with caution.");
-                window.location.reload();
-            } 
-            // Scenario C: Service Handover
-            else if (document.getElementById('mode').value === 'SERVICE') {
-                alert("🔧 Vehicle Signed Over.\n\nWorkshop notified of Explosives Clearance.");
-                window.location.reload();
-            }
-            // Scenario D: All Good
-            else {
-                alert("✅ Pre-start Complete.\n\nDrive Safely.");
-                window.location.reload();
-            }
-        })
-        .catch(err => {
+            document.body.innerHTML = `
+                <div class="d-flex flex-column justify-content-center align-items-center vh-100 text-center bg-success text-white">
+                    <h1 class="display-1">✔</h1>
+                    <h2>Success</h2>
+                    <p class="lead">Document emailed to supervisor.</p>
+                    <button onclick="window.location.reload()" class="btn btn-light btn-lg mt-4">New Entry</button>
+                </div>
+            `;
+        }).catch(err => {
             loader.classList.add('hidden');
-            alert("Error sending report. Please try again.");
+            alert("Network Error. Please try again.");
             btn.disabled = false;
         });
-
     }
 
-    // --- HELPER FUNCTIONS ---
-    function countUnchecked(divId) { 
-        return document.querySelectorAll(`#${divId} input[type="checkbox"]:not(:checked)`).length; 
-    }
-    
-    function generateChecklistHTML() {
-        let html = "";
-        const addFailures = (divId, title) => {
-            let failures = [];
-            document.querySelectorAll(`#${divId} input[type="checkbox"]:not(:checked)`).forEach(input => {
-                let label = document.querySelector(`label[for='${input.id}']`).innerText;
-                failures.push(label);
-            });
-            if(failures.length > 0) html += `<strong>${title} Failures:</strong><br><span style="color:red">${failures.join(", ")}</span><br>`;
-        };
+    // 4. ADMIN QR GENERATOR
+    function showQR() {
+        const vid = document.getElementById('vehicle').value;
+        if(!vid) return alert("Select vehicle first.");
         
-        if(document.getElementById('mode').value === 'SERVICE') {
-            addFailures('list-svc', 'Clearance');
-        } else {
-            addFailures('list-explo', 'Explosives Compliance');
-            addFailures('list-cata', 'Category A');
-            addFailures('list-catb', 'Category B');
-            addFailures('list-catc', 'Category C');
-        }
-        return html || "All Checks Passed ✅";
-    }
-
-    function toggleQR() {
-        const div = document.getElementById('qr-panel');
-        if(div.classList.contains('hidden')) {
-
-            const vid = document.getElementById('vehicle').value;
-            if(!vid) return alert("Please select a vehicle from the list first.");
-            
-            document.getElementById('qrcode').innerHTML = "";
-            // Generate QR pointing to this URL + ?vid=ID
-            const qrUrl = window.location.href.split('?')[0] + "?vid=" + encodeURIComponent(vid);
-            new QRCode(document.getElementById("qrcode"), {
-                text: qrUrl,
-                width: 200,
-                height: 200
-            });
-            div.classList.remove('hidden');
-        } else { 
-            div.classList.add('hidden'); 
-        }
+        document.getElementById('qrcode').innerHTML = "";
+        const url = window.location.href.split('?')[0] + "?vid=" + vid;
+        new QRCode(document.getElementById("qrcode"), { text: url, width: 150, height: 150 });
+        
+        document.getElementById('qr-panel').classList.remove('hidden');
+        document.getElementById('app-form').classList.add('hidden');
     }
 
     const toBase64 = file => new Promise((resolve, reject) => {
-        const reader = new FileReader(); 
+        const reader = new FileReader();
         reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result); 
+        reader.onload = () => resolve(reader.result);
         reader.onerror = error => reject(error);
     });
 </script>
